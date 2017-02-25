@@ -102,7 +102,7 @@ else:
 	print ("Sample hash: " + r_hashes[1])
 	print ("Sample UID: " + r_ids[1])
 	print ("Sample login token: " + r_login_token[1])
-	save_out(finds)
+	save_out_id_login_key(finds)
 	#print ("Passwords found: " + cracked + "/" + len(hashes))
 	#print ("Wordlist Words :" + tested)
 	#print ("Hashes computed: " + len(hashes) + tested)
