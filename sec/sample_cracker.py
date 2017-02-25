@@ -70,6 +70,7 @@ def read_dict(dictfile, hashes, userids, login_tokens):
 		print ("{cracked} login tokens were found.".format(cracked = cracked))
 		return (found_pairs)
 """
+#this is a place holder, brute force like this is dumb because it doesn't account for memory managment
 def brute_force_mode(hashes, userids, login_tokens):
 	#http://stackoverflow.com/questions/11747254/python-brute-force-algorithm
 	your_list = 'abcdefghijklmnopqrstuvwxyz'
