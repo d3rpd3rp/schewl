@@ -69,7 +69,7 @@ def read_dict(dictfile, hashes, userids, login_tokens):
 		print ("Tested {total} combinations of userids and passwords.".format(total = tested_ids * tested_words))
 		print ("{cracked} login tokens were found.".format(cracked = cracked))
 		return (found_pairs)
-
+"""
 def brute_force_mode(hashes, userids, login_tokens):
 	#http://stackoverflow.com/questions/11747254/python-brute-force-algorithm
 	your_list = 'abcdefghijklmnopqrstuvwxyz'
@@ -79,7 +79,7 @@ def brute_force_mode(hashes, userids, login_tokens):
     	for y in xrange(current):
         	a = [x+i for i in your_list for x in a]
     	#complete_list = complete_list + a
-
+"""
 
 def save_out_id_login_key(found_list):
 	crackout = open("sample_cracker_out.txt","w")
