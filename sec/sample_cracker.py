@@ -60,17 +60,17 @@ def read_dict(dictfile, hashes, userids, login_tokens):
 				m.update(concat_str.encode('utf-8'))
 				tmp_hash = m.hexdigest()
 				#print('Comparing... \n' + tmp_hash + '\n...to hash list.')
-				#linear search so this is super slow now O(n^3)
-				if tmp_hash in login_tokens:
-					found_pairs.append(userid[i] + ',' + line)
-					cracked += 1
-					print("One found!")
+				#linear search so this is super slow now O(n^3), three nested loops
+				for p in range(0, len(login_tokens)):
+					if (tmp_hash == login_tokens[p]):
+						found_pairs.append(userid[p] + ',' + line)
+						cracked += 1
+						print("One found!")
 
 		print ("Tested {total} combinations of userids and passwords.".format(total = tested_ids * tested_words))
 		print ("{cracked} login tokens were found.".format(cracked = cracked))
 		return (found_pairs)
 """
-#this is a place holder, brute force like this is dumb because it doesn't account for memory managment
 def brute_force_mode(hashes, userids, login_tokens):
 	#http://stackoverflow.com/questions/11747254/python-brute-force-algorithm
 	your_list = 'abcdefghijklmnopqrstuvwxyz'
@@ -84,7 +84,8 @@ def brute_force_mode(hashes, userids, login_tokens):
 
 def save_out_id_login_key(found_list):
 	crackout = open("sample_cracker_out.txt","w")
-	crackout.write(found_list)
+	for item in found_list:
+		crackout.write(item)
 	crackout.close()
 
 
