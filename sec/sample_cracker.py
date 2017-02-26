@@ -4,6 +4,16 @@ import hashlib, sys, re
 from time import time, sleep
 from progress_bar import printProgressBar as printbar
 
+def tobin(c):
+  cNum = ord(c)
+  ret = ""
+  for i in range(8):
+    if (cNum >> (7-i) & 0x1):
+      ret += "1"
+    else :
+      ret += "0"
+  return ret
+
 def read_am_dump(dump_file):
 	# Read the hash file entered
 	try:
@@ -45,29 +55,38 @@ def read_dict(dictfile, hashes, userids, login_tokens):
 		found_pairs = []
 		#now we need to cycle through dictionary and hashes
 		print('Running dictionary cracker...')
-		for i in range(0, len(userids)):
+		for i in userids:
+			#print ('New username ' + i)
 			tested_ids += 1
 			printbar(tested_ids, len(userids), prefix = 'Progress', suffix = 'complete', length = 50)
 			for line in open_dictionary:
-				line = line.replace("\n","")
+				line = line.replace('\n','')
 				tested_words += 1
+				tested_list.append(i + ', ' + line)
 				m = hashlib.md5()
 				#silly AM algorithm to concatenate username and passwords
 				#http://cynosureprime.blogspot.co.za/2015/09/how-we-cracked-millions-of-ashley.html
-				#print("Testing " + line + " as password.")
-				concat_str = userids[i].lower() + '::' + line.lower()
-				#print("The concatenated string " + concat_str)
-				m.update(concat_str.encode('utf-8'))
+				concat_str = i.lower() + '::' + line.lower()
+				#print(concat_str, end = '')
+				#for l in range(0, len(concat_str)):
+				#	print(tobin(concat_str[l]), end = '')
+				m.update(concat_str.encode('ascii'))
+				#print('')
+				#print (m)
 				tmp_hash = m.hexdigest()
-				#print('Comparing... \n' + tmp_hash + '\n...to hash list.')
+				#print (tmp_hash + '\n')
 				#linear search so this is super slow now O(n^3), three nested loops
 				for p in range(0, len(login_tokens)):
 					if (tmp_hash == login_tokens[p]):
-						found_pairs.append(userid[p] + ',' + line)
+						found_pairs.append(userids[p] + ',' + line)
 						cracked += 1
-						print("One found!")
+						print("One found! {uid} , {pswd}".format(uid = userids[p], pswd = line))
+						#break
 
 		print ("Tested {total} combinations of userids and passwords.".format(total = tested_ids * tested_words))
+		for q in tested_list:
+			current_user = q[]
+			print (q)
 		print ("{cracked} login tokens were found.".format(cracked = cracked))
 		return (found_pairs)
 """
