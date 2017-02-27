@@ -90,7 +90,7 @@ def read_dict(dictfile, hashes, userids, login_tokens):
         with open('tested_pairs.txt', 'w') as tested_file_out:
             for entry in tested_list:
                 tested_file_out.write(entry + ', ')
-                tested_file_out.close()
+            tested_file_out.close()
         return (found_pairs)
 
 def save_out_id_login_key(found_list):
@@ -119,3 +119,4 @@ else:
 	#print ("Wordlist Words :" + tested)
 	#print ("Hashes computed: " + len(hashes) + tested)
 	#print ("Total time taken: " + time()-tic + 's')
+
