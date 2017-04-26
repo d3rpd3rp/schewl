@@ -143,8 +143,8 @@ static struct rw_semaphore myrwsema;
 
 /** RULES **/
 #define MAX_FILENAME_LEN 128
-#define MAX_RULES_IN_POLICY 50
-#define MAX_PIDS_LABEL 50
+#define MAX_RULES_IN_POLICY 10
+#define MAX_PIDS_LABEL 10
 
 typedef struct _label
 {
