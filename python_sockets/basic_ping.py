@@ -38,27 +38,32 @@ def checksum(byte_str):
     answer = answer >> 8 | (answer << 8 & 0xff00)
     return (answer)
 
-def receiveOnePing(mySocket, ID, timeout, destAddr):
-    print('socket in receiveOnePing...{}'.format(mySocket))
-    print('mySocket is of typ {}'.format(type(mySocket)))
+def receiveOnePing(pingSocket, ID, timeout, destAddr):
+    print('mySocket in receiveOnePing...{}'.format(pingSocket))
     timeLeft = timeout
     while 1:
         startedSelect = time.time()
-        whatReady = select.select([mySocket], [], [], timeLeft)
-        print('whatReady is socket is: {}'.format(whatReady[0]))
+        #KEY ISSUE, pingSocket never lists in the readable list returned by select
+        whatReady = select.select([pingSocket], [pingSocket], [], timeLeft)
+        print('whatReady is socket is: {}'.format(whatReady))
         howLongInSelect = (time.time() - startedSelect)
         if whatReady[0] == []: # Timeout
             return "Request timed out from what ready."
+        recPacket, addr = pingSocket.recvfrom(1024)
         timeReceived = time.time()
-        recPacket, addr = mySocket.recvfrom(1024)
+        #recPacket, addr = mySocket.recvfrom(1024)
         #Fill in start
         #Fetch the ICMP header from the IP packet
-        #bit 64 - 51 is the TTL, let's try that
-        TTL = recPacket[64:51]
-        protocol = recPacket[52:59] 
-        print('fetched ?protocol {} as type {}'.format(protocol, type(protocol)))
+        icmpHeader = recPacket[20:28]
+        type, code, checksum, id, sequence = struct.unpack("bbHHh", icmpHeader)
+        if (id == ID):
+            st = struct.calcsize("d")
+            timeSent = struct.unpack("d", recPacket[28:28 + st])[0]
+            print("Reply from " + str(destAddr) + ":" + " bytes = " + str(st))
+            return (timeReceived - timeSent)
+    # Fill in end
         #Fill in end
-        timeLeft = timeLeft - howLongInSelect
+        #timeLeft = timeLeft - howLongInSelect
         if timeLeft <= 0:
             return ('Request timed out from timeLeft.')
 
@@ -71,8 +76,6 @@ def sendOnePing(pingSocket, destAddr, ID):
     header = struct.pack("bbHHh", ICMP_ECHO_REQUEST, 0, myChecksum, ID, 1)
     data = struct.pack("d", time.time())
     # Calculate the checksum on the data and the dummy header.
-    #print('sending header of type {} and data of type {} to checksum.'.format(type(header), type(data)))
-    #print('data is: {}, header is: {}'.format(data, header))
     myChecksum = checksum(header + data)
     # Get the right checksum, and put in the header
     if sys.platform == 'darwin':
@@ -83,22 +86,19 @@ def sendOnePing(pingSocket, destAddr, ID):
     header = struct.pack("bbHHh", ICMP_ECHO_REQUEST, 0, myChecksum, ID, 1)
     packet = header + data
     pingSocket.sendto(packet, (destAddr, 1)) # AF_INET address must be tuple, not str
+    timeout = 3
+    ready = select.select([pingSocket], [pingSocket], [], timeout)
+    print(ready)
     #Both LISTS and TUPLES consist of a number of objects
     #which can be referenced by their position number within the object
     print('sent ping...')
 
 def doOnePing(destAddr, timeout):
-    #SOCK_RAW is a powerful socket type. For more details see: http://sock-raw.org/papers/sock_raw
-    #from http://sock-raw.org/papers/sock_raw
-    #RAW Socket socket(AF_INET, SOCK_RAW, proto = IPPROTO_ICMP)
-    #UDP Socket socketAF_INET, SOCK_DGRAM, proto = IPPROTO_ICMP
-    #IPPROTO_ICMP = 1,		/* Internet Control Message Protocol	*/
-    IPPROTO_ICMP = 1
-    pingSocket = socket(AF_INET, SOCK_RAW, proto = IPPROTO_ICMP)
-    pingSocket.setblocking(0)
-    #print('creation of socket is: {}'.format(pingSocket))
-    #pingSocket.setblocking(0)
+    icmp = getprotobyname("icmp")
+    pingSocket = socket(AF_INET, SOCK_RAW, icmp)
+    pingSocket.bind(('', 0))
     myID = os.getpid() & 0xFFFF #Return the current process i
+    print('the process ID is {}'.format(myID))
     sendOnePing(pingSocket, destAddr, myID)
     #testing here...adding longer timeout
     timeout = 2
@@ -106,7 +106,7 @@ def doOnePing(destAddr, timeout):
     pingSocket.close()
     return(delay)
 
-def ping(host, timeout=1):
+def ping(host, timeout = 2.0):
     #timeout=1 means: If one second goes by without a reply from the server,
     #the client assumes that either the client’s ping or the server’s pong is lost
     dest = gethostbyname(host)
@@ -119,5 +119,5 @@ def ping(host, timeout=1):
         time.sleep(1)# one second
     return (delay)
 
-dest_host = 'localhost'
+dest_host = '127.0.0.1'
 ping(dest_host)
