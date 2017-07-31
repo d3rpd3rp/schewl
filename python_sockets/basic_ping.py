@@ -12,7 +12,7 @@ def checksum(byte_str):
     while count < countTo:
         #print('str[count] is {} and of type {}.'.format(byte_str[count], type(str(byte_str[count]))))
         #print('str[count+1] is {} and of type {}.'.format(byte_str[count+1], type(str(byte_str[count+1]))))
-        if type(str(byte_str[count])) == 1:
+        if len(str(byte_str[count])) == 1:
             first_byte = ord(str(byte_str[count]))
         else:
             first_byte = int(byte_str[count])
@@ -41,6 +41,7 @@ def checksum(byte_str):
 def receiveOnePing(pingSocket, ID, timeout, destAddr):
     print('mySocket in receiveOnePing...{}'.format(pingSocket))
     timeLeft = timeout
+
     while 1:
         startedSelect = time.time()
         #KEY ISSUE, pingSocket never lists in the readable list returned by select
@@ -49,26 +50,25 @@ def receiveOnePing(pingSocket, ID, timeout, destAddr):
         howLongInSelect = (time.time() - startedSelect)
         if whatReady[0] == []: # Timeout
             return "Request timed out from what ready."
+        print('before receive packet.')
         recPacket, addr = pingSocket.recvfrom(1024)
+        print('after receive packet.')
         timeReceived = time.time()
         #recPacket, addr = mySocket.recvfrom(1024)
         #Fill in start
         #Fetch the ICMP header from the IP packet
         icmpHeader = recPacket[20:28]
-        type, code, checksum, id, sequence = struct.unpack("bbHHh", icmpHeader)
+        type_data, code, checksum, id, sequence = struct.unpack("bbHHh", icmpHeader)
         if (id == ID):
             st = struct.calcsize("d")
             timeSent = struct.unpack("d", recPacket[28:28 + st])[0]
             print("Reply from " + str(destAddr) + ":" + " bytes = " + str(st))
             return (timeReceived - timeSent)
-    # Fill in end
-        #Fill in end
-        #timeLeft = timeLeft - howLongInSelect
+        timeLeft = timeLeft - howLongInSelect
         if timeLeft <= 0:
             return ('Request timed out from timeLeft.')
 
 def sendOnePing(pingSocket, destAddr, ID):
-    #print('in sendOnePing creation of socket is: {}'.format(pingSocket))
     # Header is type (8), code (8), checksum (16), id (16), sequence (16)
     myChecksum = 0
     # Make a dummy header with a 0 checksum.
