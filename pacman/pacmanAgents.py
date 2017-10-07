@@ -16,6 +16,9 @@ from pacman import Directions
 from game import Agent
 from heuristics import scoreEvaluation
 import random
+import sys
+
+sys.setrecursionlimit(10000)
 
 class RandomAgent(Agent):
     # Initialization Function: Called one time when the game starts
@@ -49,7 +52,7 @@ class GreedyAgent(Agent):
         # return random action from the list of the best actions
         return random.choice(bestActions)
 
-class node(state):
+class node:
     def __init__ (self, state, prevAction, parent, depth):
         self.state = state
         self.children = None
@@ -57,6 +60,11 @@ class node(state):
         self.parent = parent
         self.prevAction = prevAction
         self.depth = depth
+        self.successState = state.isWin()
+        if state.isLose():
+            self.isDead = True
+        else:
+            self.isDead = False
     
     def addChild(self, node):
         self.children.append(node)
@@ -73,37 +81,51 @@ class node(state):
 class BFSAgent(Agent):
     # Initialization Function: Called one time when the game starts
     def registerInitialState(self, state):
-        return;
+        return
 
-    def traceback (node, actionSequence):
-        actions.append(child.prevAction())        
-        traceback(node.retParent())
+    def traceback(self, Node, actionSequence):
+        actionSequence.append(Node.prevAction())        
+        traceback(Node.retParent())
         return (actionSequence)
 
-    def BFS(node, depth):
-        if node.state.isWin() == True:
+    def BFS(self, Node, state, depth):
+        #print ('top of BFS: state is of type {} and state.isWin() has value {}'.format(type(state), state.isWin()))  
+        #print ('top of BFS: Node is of type {} and Node.successState() has value {}'.format(type(Node), Node.successState))  
+        if Node.successState:
             actionSequence = []
-            traceback(node, actionSequence)
+            actionSequence = traceback(self, Node, actionSequence)
             return (actionSequence)
+        elif Node.isDead:
+            return
         else:
             #def __init__ (self, state, prevAction, parent, depth):
-            children = []
-            legal = node.state.getLegalPacmanActions()
-            for move in legal:
-                children.append(node(node.state.generateSuccessor(move), move, node, depth))
-            depth += 1
-            for child in children:
-                if (child.depth() < depth):
-                    BFS(child, depth)
-                else:
-                    pass
+            if (Node.depth < depth):
+                children = []
+                successorState = []
+                legal = state.getLegalPacmanActions()
+                for action in legal:
+                    index = 0
+                    successorState.append(state.generateSuccessor((0, action), action))
+                    print('generate successor returns state type {} and value {}'.format(type(successorState[index]), successorState[index]))
+                    #print ('creating first child: successorState is of type {} and successorState[index] is type {}'.format(type(successorState), type(successorState[index])))
+                    #print ('creating first child: successorState[index][0] is {}'.format(successorState[index][0]))
+                    c = node(successorState[index][0], action, Node, depth+1)
+                    if not c.isDead:
+                        children.append(c)
+                        print('found {} viable children at depth {}'.format(len(children), depth+1))
+                        index += 1
+                depth += 1
+                for child in children:
+                    BFSAgent.BFS(self, child, Node.state, depth)
 
     # GetAction Function: Called with every frame
     def getAction(self, state):
         # TODO: write BFS Algorithm instead of returning Directions.STOP
         #def __init__ (self, state, prevAction, parent, depth):
         root = node(state, None, None, 0)
-        return BFS(root, 1)
+        #print ('state is of type {} and isWin has value {}'.format(type(state), state.isWin()))
+        #print ('root is of type {} and root.state.isWin() has value {}'.format(type(root), root.state.isWin()))        
+        return BFSAgent.BFS(self, root, state, 1)
 
 class DFSAgent(Agent):
     # Initialization Function: Called one time when the game starts
