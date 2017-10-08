@@ -61,11 +61,7 @@ class node:
         self.prevAction = prevAction
         self.depth = depth
         self.successState = state.isWin()
-        if state.isLose():
-            self.isDead = True
-        else:
-            self.isDead = False
-    
+
     def addChild(self, node):
         self.children.append(node)
     
@@ -77,55 +73,84 @@ class node:
     
     def prevAction(self):
         return(self.prevAction())
+    
+    def isDead(self):
+        if self.state.isLose():
+            self.dead = True
+        else:
+            self.dead = False
+
+    def traceback(self, actionSequence):
+        actionSequence.append(Node.prevAction())        
+        traceback(Node.retParent())
+        return (actionSequence)
+
+    def BFS(self, depth, KnownStates):
+        #print ('top of BFS: state is of type {} and state.isWin() has value {}'.format(type(state), state.isWin()))  
+        #print ('top of BFS: Node is of type {} and Node.successState() has value {}'.format(type(Node), Node.successState))
+        print('top of BFS call...')
+        if self.successState:
+            actionSequence = []
+            actionSequence = traceback(actionSequence)
+            return (actionSequence)
+        elif self.isDead():
+            return
+        else:
+            print('inside BFS else...self.depth is {} and depth is {}'.format(self.depth, depth))
+            #def __init__ (self, state, prevAction, parent, depth):
+            if (self.depth < depth):
+                #print('after depth check, before legal assignment...')
+                children = []
+                legal = self.state.getLegalPacmanActions()
+                #print('after get legal assignment...')
+                index = 0
+                for action in legal:
+                    print('action is {}'.format(action))
+                    if action is not None:
+                        print('after action is None test...')     
+                        successorState = self.state.generateSuccessor(0, action)
+                        #print('state.generateSuccessor((0, action), action is {}'.format(state.generateSuccessor(0, action)))
+                        #print('generate successor returns state type {} and value {}'.format(type(successorState[index]), successorState[index]))
+                        #print ('creating first child: successorState is of type {} and successorState[index] is type {}'.format(type(successorState), type(successorState[index])))
+                        #print ('creating first child: successorState[index] is: \n{}'.format(successorState[index]))
+                        c = node(successorState, action, self, depth)
+                        print('length of known states is {}'.format(len(KnownStates)))
+                        if len(KnownStates) == 0:
+                            KnownStates.append(successorState)
+                            children.append(c)
+                            index += 1
+                        else:
+                            for i in range(0, (len(KnownStates)), 1):
+                                if KnownStates[i] is successorState:
+                                    break
+                                elif i == len(KnownStates):
+                                    KnownStates.append(successorState)
+                                    addChild = True
+                                    if not c.isDead() and addChild:
+                                        children.append(c)
+                                        index += 1
+                print('found {} viable children at depth {}'.format(len(children), depth))
+                if len(children) > 0:
+                    depth += 1
+                    for child in children:
+                        print('child info: \nstate:\n{}\nprevAction: {}\ntype(parent): {}\ndepth:{}'.format(child.state, child.prevAction, type(child.parent), child.depth))
+                        print('available actions for child: {}'.format(child.state.getLegalPacmanActions()))
+                        child.BFS(depth, KnownStates)
 
 class BFSAgent(Agent):
     # Initialization Function: Called one time when the game starts
     def registerInitialState(self, state):
         return
 
-    def traceback(self, Node, actionSequence):
-        actionSequence.append(Node.prevAction())        
-        traceback(Node.retParent())
-        return (actionSequence)
-
-    def BFS(self, Node, state, depth):
-        #print ('top of BFS: state is of type {} and state.isWin() has value {}'.format(type(state), state.isWin()))  
-        #print ('top of BFS: Node is of type {} and Node.successState() has value {}'.format(type(Node), Node.successState))  
-        if Node.successState:
-            actionSequence = []
-            actionSequence = traceback(self, Node, actionSequence)
-            return (actionSequence)
-        elif Node.isDead:
-            return
-        else:
-            #def __init__ (self, state, prevAction, parent, depth):
-            if (Node.depth < depth):
-                children = []
-                successorState = []
-                legal = state.getLegalPacmanActions()
-                for action in legal:
-                    index = 0
-                    successorState.append(state.generateSuccessor((0, action), action))
-                    print('generate successor returns state type {} and value {}'.format(type(successorState[index]), successorState[index]))
-                    #print ('creating first child: successorState is of type {} and successorState[index] is type {}'.format(type(successorState), type(successorState[index])))
-                    #print ('creating first child: successorState[index][0] is {}'.format(successorState[index][0]))
-                    c = node(successorState[index][0], action, Node, depth+1)
-                    if not c.isDead:
-                        children.append(c)
-                        print('found {} viable children at depth {}'.format(len(children), depth+1))
-                        index += 1
-                depth += 1
-                for child in children:
-                    BFSAgent.BFS(self, child, Node.state, depth)
-
     # GetAction Function: Called with every frame
     def getAction(self, state):
         # TODO: write BFS Algorithm instead of returning Directions.STOP
         #def __init__ (self, state, prevAction, parent, depth):
         root = node(state, None, None, 0)
+        known_states = []
         #print ('state is of type {} and isWin has value {}'.format(type(state), state.isWin()))
         #print ('root is of type {} and root.state.isWin() has value {}'.format(type(root), root.state.isWin()))        
-        return BFSAgent.BFS(self, root, state, 1)
+        return root.BFS(1, known_states)
 
 class DFSAgent(Agent):
     # Initialization Function: Called one time when the game starts
