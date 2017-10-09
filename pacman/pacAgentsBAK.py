@@ -28,6 +28,8 @@ nodes = {}
 #test/tmp global vars
 counter = 0
 trackState = ''
+ceilingBest = -1
+treeDepth = 0
 
 class RandomAgent(Agent):
     # Initialization Function: Called one time when the game starts
@@ -188,11 +190,12 @@ def compareStateAttr(state1, state2):
         print('first state has no _capsuleEaten attribute.')
 
 class node:
-    def __init__ (self, state, prevAction = None, parent = None, depth = 0):
+    def __init__ (self, state, prevAction = None, parent = None, depth = 0, bfsSearchDepth = 0):
         self.state = state
         self.prevAction = prevAction
         self.parent = parent
         self.depth = depth
+        self.bfsSearchDepth = bfsSearchDepth
         self.successState = state.isWin()
         self.children = []
         self.visited = False
@@ -208,30 +211,40 @@ class node:
             self.dead = False
 
     def traceback(self):
+        #print('from backward to forward the sequence is: ')
         sequence = []
         if self.parent == None:
             return (sequence)
         sequence.append(self.prevAction)
+        #print('{}, '.format(self.prevAction))
         nextNode = self.parent
         sequence.append(self.prevAction)
-        while nextNode.depth > 1:
-            sequence.append(self.prevAction)
-            nextNode = nextNode.parent
-        return (sequence)
+        if nextNode.parent is not None:
+            if nextNode.parent.prevAction is not None:
+                nextNode = nextNode.parent
+                sequence.append(nextNode.prevAction)
+                if nextNode.parent is not None:
+                    nextNode = nextNode.parent
+                else:
+                    return (sequence)
+        else:
+            return(sequence)
 
 
-def BFS(state, Node = None, lastAction = None, depth = 1):
-    global controlCounter, knownStates, nodes, moves, counter
+def BFS(state, Node = None, lastAction = None, depth = None):
+    global controlCounter, knownStates, nodes, moves, counter, ceilingBest, treeDepth
     """
     #print('control counter is now {}'.format(controlCounter))
     if controlCounter > 500:
         print ('controlcounter hit...knownStates is now size {}'.format(len(knownStates)))
         return
     """
-    if Node.depth >= depth and depth > 2:
-        print('failed depth check...')
-        return
-    elif state.isWin():
+    if Node is not None:
+        if Node.bfsSearchDepth < 1:
+            print('failed depth check...')
+            return
+        
+    if state.isWin():
         Node.successState = True
         Node.prevAction = lastAction
         nodes[state] = Node
@@ -249,49 +262,60 @@ def BFS(state, Node = None, lastAction = None, depth = 1):
         moves.append(action)
         return (moves) 
     else:
+        #print('BFS else: state is type {} and Node is type {}.'.format(type(state), type(Node)))
+        if Node is not None:
+            Node.bfsSearchDepth -= 1
         legal = state.getLegalPacmanActions()
         for action in legal:
             if action is not None:
                 #print('action in else is {}'.format(action))
-                if (counter > 5000):
+                if (counter > 4000):
                     v=list(knownStates.values())
                     k=list(knownStates.keys())
                     #print ('k[v.index(max(v))] returns type {} and value {}'.format(type(k[v.index(max(v))]), k[v.index(max(v))]))
                     soFarBestState = k[v.index(max(v))]
                     #print('the best state so far var resolved as type: {} and value {}'.format(type(soFarBestState), soFarBestState))
+                    if soFarBestState not in nodes.keys():
+                        print('soFarBestState not found in keys.')
+                        #not sure about this creature....
+                        currentBestNode = node(state, prevAction = Node.prevAction, parent = Node.parent, depth = Node.depth)
+                        nodes[soFarBestState] = currentBestNode
                     soFarBestNode = nodes[soFarBestState]
                     #print('the best node so far var resolved as type: {} and value {}'.format(type(soFarBestNode), soFarBestNode))
-                    moves = soFarBestNode.traceback()
-                    moves.append(action)
-                    print('trying to return moves in max succcesor test...with high score of {}'.format(scoreEvaluation(soFarBestState)))
+                    if ceilingBest < max(v):
+                        print('found new ceilingBest at {}'.format(max(v)))
+                        ceilingBest = max(v)
+                        moves = soFarBestNode.traceback()
+                    #print('trying to return moves in max succcesor test...with high score of {}'.format(scoreEvaluation(soFarBestState)))
                     #print('moves is of type {} and value {}'.format(type(moves), moves))
-                    return (moves)
-                if state.generateSuccessor(0, action) is not None:
+                else:
                     counter += 1
-                    print('Next call to successor is number {}.'.format(counter))
+                    #print('Next call to successor is number {}.'.format(counter))
                     successorState = state.generateSuccessor(0, action)
                     if successorState not in knownStates:
+                        #print('in new successor state under action loop...')
                         c = node(successorState, action, Node, depth)
                         if successorState.isWin():
                             Node.prevAction = lastAction
-                            Node.successState = True
-                            nodes[state] = Node
-                            knownStates[state] = scoreEvaluation(state)
-                            moves = Node.traceback()
-                            moves.append(action)
+                            nodes[successorState] = c
+                            knownStates[successorState] = scoreEvaluation(successorState)
+                            moves = c.traceback()
                             print('trying to return moves in winning state...')
                             return (moves) 
                         elif successorState.isLose():
-                            print('Lost in successor state is lose')
+                            print('Lost in successor state.')
                             knownStates[state] = scoreEvaluation(state)
+
                         else:
                             knownStates[successorState] = scoreEvaluation(successorState)
                             #print('knownStates is size {}'.format(len(knownStates)))
-                            nodes[state] = Node
-                            nextDepth = depth + 1
-                            BFS(successorState, c, action, nextDepth)
-        depth += 1
-        print('Current depth is {}.'.format(depth))
+                            c.bfsSearchDepth = 1
+                            nodes[state] = c
+                            BFS(successorState, Node = c, lastAction = action)
+                    else:
+                        return
+        treeDepth += 1
+        #print('Current depth is {}.'.format(treeDepth))
 
 
 class BFSAgent(Agent):
@@ -299,6 +323,7 @@ class BFSAgent(Agent):
     def registerInitialState(self, state):
         global root, nodes, trackState
         root = node(state, None, None, 0)
+        root.bfsSearchDepth = 1
         nodes[state] = root
         knownStates[state] = scoreEvaluation(state)
         trackState = type(state)
@@ -306,17 +331,25 @@ class BFSAgent(Agent):
 
     # GetAction Function: Called with every frame
     def getAction(self, state):
-        global nodes, knownStates, root, moves, trackState
+        global nodes, knownStates, root, moves, trackState, counter, ceilingBest
         #is the root.state eq to the state here?
         if trackState is not type(state):
-            print('state is now of type {} and value {}.'.format(type(state), state))
+            trackState = type(state)
+            print('state is now of type {} and value \n{}.'.format(type(state), state))
         #here if the state is already found, it's because it has been seen before and shouldn't be expanded
         #so what should the action be? reversal? nothing?
         #random for now
-        #print ('the value of this "if nodes[state]" is {} and type {}.'.format(((nodes[state])), type((nodes[state]))))
-        if nodes[state]:
-            terminalState = BFS(state, Node = nodes[state])
+        #print ('the value of this "nodes[state]" is {} and type {}.'.format(((nodes[state])), type((nodes[state]))))
+        keys = nodes.keys()
+        if state in keys:
+            #print('passing node type of {} wiht vars:\n {}'.format(type(nodes[state]), vars(nodes[state])))
+            ceilingBest = -1
+            counter = 0
+            BFS(state, Node = nodes[state])
+            #print('foundState in nodes dict, returned terminalState as type {}'.format(type(terminalState)))
+            print('Found state in nodes, moves is length {}.'.format(len(moves)))
             direction = moves[-1]
+            print('direction is {}'.format(direction))
             if direction is 'North':
                 return Directions.NORTH
             if direction is 'South':
@@ -326,8 +359,14 @@ class BFSAgent(Agent):
             if direction is 'West':
                 return Directions.WEST
         else:
-            terminalState = BFS(state)
+            ceilingBest = -1
+            counter = 0
+            BFS(state)
+            #print('did not find state in nodes dict, returned terminalState as type {}'.format(type(terminalState)))
+            print('Else (no known node) moves is length {}.'.format(len(moves)))
+            #print('did not find state in nodes dict, moves is length {}.'.format(len(moves)))
             direction = moves[-1]
+            print('direction is {}'.format(direction))
             if direction is 'North':
                 return Directions.NORTH
             if direction is 'South':
