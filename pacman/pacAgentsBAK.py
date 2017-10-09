@@ -20,6 +20,10 @@ import sys
 
 sys.setrecursionlimit(100000)
 
+#global vars
+knownStates = {}
+moves = []
+nodes = {}
 
 
 class RandomAgent(Agent):
@@ -211,61 +215,86 @@ class node:
         return (sequence)
 
 
-def BFS(state):
-    global controlCounter, knownStates
-    controlCounter += 1
+def BFS(state, Node, lastAction, depth):
+    global controlCounter, knownStates, nodes
     """
     #print('control counter is now {}'.format(controlCounter))
     if controlCounter > 500:
         print ('controlcounter hit...knownStates is now size {}'.format(len(knownStates)))
         return
     """
-    if state.isWin():
-        return (state) 
+    print('Current Node in BFS has depth {} and the current depth is {}'.format(Node.depth, depth))
+    if Node.depth >= depth:
+        return
+    elif state.isWin():
+        Node.successState = True
+        Node.prevAction = lastAction
+        nodes[state] = Node
+        knownStates[state] = scoreEvaluation(state)
+        return (Node) 
     elif state.isLose():
-        return (state)
+        Node.successState = False
+        Node.prevAction = lastAction
+        nodes[state] = Node
+        return (Node)
     else:
-        children = []
         legal = state.getLegalPacmanActions()
         for action in legal:
             if action is not None:
+                print('action in else is {}'.format(action))
                 successorState = state.generateSuccessor(0, action)
                 if successorState not in knownStates:
-                        if successorState.isWin():
-                            return (successorState) 
-                        elif successorState.isLose():
-                            return (successorState)
-                        else:
-                            knownStates[successorState] = action
-                            #print('knownStates is size {}'.format(len(knownStates)))
-                            BFS(successorState)
+                    c = node(successorState, action, Node, depth)
+                    if successorState.isWin():
+                        Node.prevAction = lastAction
+                        Node.successState = True
+                        nodes[state] = Node
+                        return (successorState) 
+                    elif successorState.isLose():
+                        Node.prevAction = lastAction
+                        Node.successState = False
+                        nodes[state] = Node
+                        return (successorState)
+                    else:
+                        knownStates[successorState] = scoreEvaluation(successorState)
+                        #print('knownStates is size {}'.format(len(knownStates)))
+                        nodes[state] = Node
+                        BFS(successorState, c, action, depth)
+        depth += 1
 
 
 class BFSAgent(Agent):
     # Initialization Function: Called one time when the game starts
     def registerInitialState(self, state):
-        global knownStates, controlCounter
-        knownStates = {}
-        controlCounter = 0  
+        global root, nodes
+        root = node(state, None, None, 0)
+        nodes[state] = root
+        knownStates[state] = scoreEvaluation(state)
         return
 
     # GetAction Function: Called with every frame
     def getAction(self, state):
+        global nodes, knownStates, root
+        #is the root.state eq to the state here?
+        if (root.state == state):
+            print('root state matches current')
+        else:
+            print('root state is something different')
         #here if the state is already found, it's because it has been seen before and shouldn't be expanded
         #so what should the action be? reversal? nothing?
         #random for now
         if state in knownStates:
-            actions = state.getLegalPacmanActions()
-            knownStates[state] = actions[random.randint(0,len(actions)-1)]
+            print('hit known state test in getAction')
+            terminalState = BFS(state, nodes[state], None, 1)
             return (knownStates[state])
 
         else:
             #print('knownStates is of type {} and has {}'.format(type(knownStates), knownStates))
-            terminalState = BFS(state)
-            print('reached terminal state. of type {} and value {}'.format(type(terminalState), terminalState))
-            #print('trying to search for high score states...from {} known states.'.format(len(knownStates)))
-            #print('max score so far is {}'.format(max(list(knownStates.viewvalues()))))
-            print('Number of knownStates after running BFS with recursion control is {} and the keys are: \n{}'.format(len(knownStates), list(knownStates.viewkeys())))
+            #print('simple knownState test in getAction....does the node.state equal the state? {}'.format((root.state == state)))
+            print('nodes[state] is retrieving this node: \n'.format(nodes[state]))
+            terminalState = BFS(state, nodes[state], None, 1)
+            #print('reached terminal state. of type {} and value {}'.format(type(terminalState), terminalState))
+            #print('Number of knownStates after running BFS with recursion control is {} and the keys are: \n{}'.format(len(knownStates), list(knownStates.viewkeys())))
             return Directions.STOP
       
         
