@@ -3,7 +3,7 @@
 import newsapi
 import json
 
-apiO = newsapi.NewsApiClient(api_key='54d8cbfd13474052801605a1f0412c2d')
+apiO = newsapi.NewsApiClient(api_key='')
 
 sourceList = ['bbc-news', 'the-verge', 'abc-news', 'crypto coins news', 'ary news','associated press',\
     'wired','aftenposten','australian financial review','axios',\
