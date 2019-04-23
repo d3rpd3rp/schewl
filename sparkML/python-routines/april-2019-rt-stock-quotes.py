@@ -1,3 +1,9 @@
+
+
+
+#THIS MODULE IS DEAD???
+#22 APRIL 2019 ... seems like it ...
+
 #!/usr/local/bin/python3.7
 import sys
 from googlefinance import getQuotes
@@ -40,8 +46,4 @@ with open(sys.argv[1], 'r') as symbolcsv:
 symbolcsv.close()
 
 for symbol in symboldict:
-    print(type(symbol), symbol)
-
-
-getQuotes(symboldict.keys())
-getNews(symboldict.keys())
+    symboldict[symbol] = getQuotes(symbol)
