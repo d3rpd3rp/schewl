@@ -2,7 +2,7 @@
 import newsapi
 import json
 
-apiO = newsapi.NewsApiClient(api_key='')
+apiO = newsapi.NewsApiClient(api_key='54d8cbfd13474052801605a1f0412c2d')
 
 sourceList = 'bbc-news,the-verge,abc-news,crypto coins news,ary news,associated press,\
     wired,aftenposten,australian financial review,axios,\
@@ -12,7 +12,7 @@ sourceList = 'bbc-news,the-verge,abc-news,crypto coins news,ary news,associated 
 pages = {}
 pageNo = 1
 
-while True:
+while True and pageNo < 100:
     page = apiO.get_everything(language = 'en', from_param = '2019-03-23', \
         sort_by = 'popularity', sources = sourceList, page = pageNo)
     print(page, type(page))
