@@ -4,7 +4,7 @@
 #THIS MODULE IS DEAD???
 #22 APRIL 2019 ... seems like it ...
 
-#!/usr/local/bin/python3.7
+#!/usr/local/bin/python3.6 (35, 37, also tried)
 import sys
 from googlefinance import getQuotes
 from googlefinance import getNews
